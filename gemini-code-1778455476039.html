@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>東北大学公式アプリ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --th-indigo: #4b0082; /* 学生証ヘッダー：濃い紫 */
+            --th-hagi: #712271;   /* ロゴ・項目名：萩色 */
+            --ios-bg: #f2f2f7;    /* グレー背景 */
+            --text-black: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            background-color: #ffffff;
+            color: var(--text-black);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+        }
+
+        /* --- ホーム画面 --- */
+        .home-view { padding: env(safe-area-inset-top) 16px 100px; }
+        .header-main { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
+        .user-trigger { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .univ-logo {
+            width: 56px; height: 56px; background: var(--th-hagi); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .user-meta .u-name { font-size: 1.15rem; font-weight: 700; color: var(--th-hagi); }
+        .user-meta .u-sub { font-size: 0.85rem; color: #666; margin-top: 2px; }
+        .id-btn { text-align: center; color: var(--th-hagi); font-size: 0.65rem; font-weight: 700; cursor: pointer; }
+
+        .tab-bar { display: flex; gap: 24px; border-bottom: 2px solid #efefef; margin-top: 10px; }
+        .tab-item { padding: 8px 0 10px; font-weight: 700; font-size: 0.95rem; color: #999; }
+        .tab-item.active { color: var(--th-hagi); border-bottom: 3.5px solid var(--th-hagi); }
+
+        .search-box { background: var(--ios-bg); border-radius: 8px; padding: 12px; margin: 16px 0; color: #8e8e93; font-size: 0.95rem; }
+        
+        .section-bar {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            border-bottom: 4px solid var(--th-hagi); padding-bottom: 4px; margin-top: 24px;
+        }
+        .section-bar h2 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+        .more-badge { background: var(--th-hagi); color: #fff; padding: 2px 12px; border-radius: 14px; font-size: 0.75rem; font-weight: 700; }
+
+        /* --- 学生証モーダル（下からスライド） --- */
+        #id-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 1000; align-items: flex-end;
+        }
+        .id-sheet {
+            width: 100%; height: 95vh; background: #fff; border-top-left-radius: 24px; border-top-right-radius: 24px;
+            transform: translateY(100%); transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .id-header {
+            background: var(--th-indigo); color: #fff; padding: 18px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 10;
+        }
+        .id-body { padding: 32px 24px 100px; }
+
+        .profile-flex { display: flex; gap: 20px; margin-bottom: 24px; }
+        .p-photo { width: 110px; height: 142px; background: #eee; object-fit: cover; border-radius: 1px; }
+        .p-meta { display: flex; flex-direction: column; justify-content: center; }
+        .p-meta .p-id-top { font-size: 0.85rem; color: #333; margin-bottom: 4px; }
+        .p-meta .p-name-top { font-size: 1.5rem; font-weight: 700; color: #000; }
+
+        .qr-area { text-align: center; margin-bottom: 35px; }
+        .qr-tag { color: var(--th-hagi); font-size: 0.65rem; font-weight: 700; margin-bottom: 6px; }
+
+        .item-row { margin-bottom: 15px; }
+        .item-label { color: var(--th-hagi); font-size: 0.68rem; font-weight: 700; }
+        .item-value { font-size: 1rem; font-weight: 500; color: #000; margin-top: 1px; }
+
+        /* --- 証明文・注意事項 --- */
+        .legal-box { margin-top: 40px; padding-top: 30px; border-top: 1.5px solid #eee; color: #000; font-size: 0.88rem; line-height: 1.7; }
+        .legal-unit { margin-bottom: 24px; }
+        .legal-unit small { display: block; font-size: 0.75rem; margin-top: 2px; }
+        .president-block { margin: 35px 0; font-weight: 700; }
+        .president-block small { font-weight: 400; font-size: 0.75rem; }
+        .notice-section { font-size: 0.8rem; line-height: 1.6; }
+        .notice-title { font-weight: 700; display: block; margin-bottom: 6px; font-size: 0.9rem; }
+
+        /* --- データ管理画面 --- */
+        #editor-panel {
+            position: fixed; top: 5%; left: 5%; width: 90%; max-height: 85vh;
+            background: #fff; border-radius: 20px; padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 2000; display: none; overflow-y: auto;
+        }
+        .edit-field { margin-bottom: 12px; }
+        .edit-field label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 3px; }
+        .edit-field input { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .save-btn { background: var(--th-hagi); color: #fff; width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: 700; margin-top: 15px; }
+
+        /* フッター */
+        .footer-nav { position: fixed; bottom: 0; width: 100%; height: 84px; background: var(--th-hagi); display: flex; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
+        .nav-item { text-align: center; color: #fff; font-size: 0.65rem; padding-top: 12px; opacity: 0.7; }
+        .nav-item.active { opacity: 1; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <div class="home-view">
+        <header class="header-main">
+            <div class="user-trigger" onclick="toggleEditor()">
+                <div class="univ-logo">
+                    <img src="https://www.tohoku.ac.jp/japanese/common/img/logo_tohoku_w.png" width="40">
+                </div>
+                <div class="user-meta">
+                    <div class="u-name" id="h-name-disp">礒部 遼太朗 さん</div>
+                    <div class="u-sub" id="h-sub-disp">学部３年生 , 工学部</div>
+                </div>
+            </div>
+            <div class="id-btn" onclick="openID()">
+                <div style="font-size: 1.8rem; margin-bottom: -2px;">🔳</div>
+                学生証/職員証
+            </div>
+        </header>
+
+        <nav class="tab-bar">
+            <div class="tab-item active">ホーム - 学生用</div>
+            <div class="tab-item">Life Guide</div>
+        </nav>
+
+        <div class="search-box">🔍 キーワードから検索</div>
+
+        <section>
+            <div class="section-bar"><h2>大学からのお知らせ</h2><div class="more-badge">MORE 〉</div></div>
+            <div style="padding: 60px 0; text-align: center; color: #ccc;">配信されているお知らせはありません</div>
+        </section>
+    </div>
+
+    <div id="id-modal" onclick="closeID()">
+        <div class="id-sheet" onclick="event.stopPropagation()">
+            <div class="id-header">
+                <span style="font-size: 1rem; font-weight: 700;">東北大学</span>
+                <span style="font-size: 0.8rem;">スマホ学生証</span>
+            </div>
+
+            <div class="id-body">
+                <div class="profile-flex">
+                    <img id="v-photo" src="https://via.placeholder.com/110x142?text=Photo" class="p-photo">
+                    <div class="p-meta">
+                        <div class="p-id-top" id="v-id-top">A9LB9999</div>
+                        <div class="p-name-top" id="v-name-top">宮城野 萩子</div>
+                    </div>
+                </div>
+
+                <div class="qr-area">
+                    <div class="qr-tag">スマホ学生証QR</div>
+                    <img id="v-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=A9LB9999" width="160">
+                </div>
+
+                <div class="id-info-list">
+                    <div class="item-row"><div class="item-label">学籍番号 / Student ID</div><div class="item-value" id="v-id">A9LB9999</div></div>
+                    <div class="item-row"><div class="item-label">所属 / Course</div><div class="item-value" id="v-course">工学部</div></div>
+                    <div class="item-row"><div class="item-label">入学年月日 / Date of Admission</div><div class="item-value" id="v-adm">2024/04/01</div></div>
+                    <div class="item-row"><div class="item-label">フリガナ / Furigana</div><div class="item-value" id="v-kana">イソベ リョウタロウ</div></div>
+                    <div class="item-row"><div class="item-label">氏名 / Name</div><div class="item-value" id="v-fullname">礒部 遼太朗</div></div>
+                    <div class="item-row"><div class="item-label">生年月日 / Date of Birth</div><div class="item-value" id="v-birth">2005/04/01</div></div>
+                    <div class="item-row"><div class="item-label">発行日</div><div class="item-value" id="v-issue">2024/04/01</div></div>
+                    <div class="item-row"><div class="item-label">有効期限</div><div class="item-value" id="v-expiry">2028/03/31</div></div>
+                </div>
+
+                <div class="legal-box">
+                    <div class="legal-unit">
+                        上記のものは本学の学生であることを証明する<br>
+                        <small>The above person certifies that he/she is a student of the University.</small>
+                    </div>
+                    <div class="legal-unit">
+                        ただし、顔写真が表記されてない場合は無効。<br>
+                        <small>However, this certificate is invalid if a facial photograph is not displayed.</small>
+                    </div>
+
+                    <div class="president-block">
+                        仙台市青葉区片平二丁目1-1<br>
+                        東北大学総長<br><br>
+                        <small>1-1, Katahira 2-chome, Aoba-ku, Sendai City President of Tohoku University</small>
+                    </div>
+
+                    <div class="notice-section">
+                        <span class="notice-title">【注意事項】</span>
+                        ・この証は、常に携帯し、通学定期乗車券又は学生割引乗車券によって乗車船する場合に係員の請求があったとき又は本学関係者から請求があったときは、提示してください。<br>
+                        ・この証は、他人に貸与し又は譲渡することはできません。
+                    </div>
+
+                    <div class="notice-section" style="margin-top: 25px;">
+                        <span class="notice-title">【Not that】</span>
+                        ・This identification card must be carried at all times, and must be presented when requested by an attendant or by a person related to the University when boarding a bus with a computer password or student discount ticket.<br>
+                        ・This certificate should not be lent or be given to other person.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editor-panel">
+        <h3 style="margin-top:0; color:var(--th-hagi);">情報の編集</h3>
+        <div class="edit-field"><label>ホーム表示名</label><input type="text" id="i-h-name" value="礒部 遼太朗"></div>
+        <div class="edit-field"><label>ホーム所属・学年</label><input type="text" id="i-h-sub" value="学部３年生 , 工学部"></div>
+        <div class="edit-field"><label>氏名</label><input type="text" id="i-name" value="礒部 遼太朗"></div>
+        <div class="edit-field"><label>フリガナ</label><input type="text" id="i-kana" value="イソベ リョウタロウ"></div>
+        <div class="edit-field"><label>学籍番号</label><input type="text" id="i-id" value="A9LB9999"></div>
+        <div class="edit-field"><label>所属(学部・学科)</label><input type="text" id="i-course" value="工学部"></div>
+        <div class="edit-field"><label>入学年月日</label><input type="text" id="i-adm" value="2024/04/01"></div>
+        <div class="edit-field"><label>生年月日</label><input type="text" id="i-birth" value="2005/04/01"></div>
+        <div class="edit-field"><label>発行日</label><input type="text" id="i-issue" value="2024/04/01"></div>
+        <div class="edit-field"><label>有効期限</label><input type="text" id="i-expiry" value="2028/03/31"></div>
+        <div class="edit-field"><label>写真URL</label><input type="text" id="i-photo" placeholder="https://..."></div>
+        <button class="save-btn" onclick="save()">データを反映する</button>
+        <button onclick="toggleEditor()" style="width:100%; border:none; background:none; color:#999; margin-top:10px;">閉じる</button>
+    </div>
+
+    <nav class="footer-nav">
+        <div class="nav-item active">📰<br>お知らせ</div>
+        <div class="nav-item">📈<br>アンケート</div>
+        <div class="nav-item">📅<br>学年暦</div>
+        <div class="nav-item">📖<br>授業情報</div>
+        <div class="nav-item">📍<br>マップ</div>
+    </nav>
+
+    <script>
+        function openID() {
+            const m = document.getElementById('id-modal');
+            m.style.display = 'flex';
+            setTimeout(() => { m.querySelector('.id-sheet').style.transform = 'translateY(0)'; }, 10);
+        }
+        function closeID() {
+            const s = document.querySelector('.id-sheet');
+            s.style.transform = 'translateY(100%)';
+            setTimeout(() => { document.getElementById('id-modal').style.display = 'none'; }, 450);
+        }
+        function toggleEditor() {
+            const p = document.getElementById('editor-panel');
+            p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+        }
+        function save() {
+            document.getElementById('h-name-disp').innerText = document.getElementById('i-h-name').value + " さん";
+            document.getElementById('h-sub-disp').innerText = document.getElementById('i-h-sub').value;
+            document.getElementById('v-name-top').innerText = document.getElementById('i-name').value;
+            document.getElementById('v-fullname').innerText = document.getElementById('i-name').value;
+            document.getElementById('v-kana').innerText = document.getElementById('i-kana').value;
+            document.getElementById('v-id-top').innerText = document.getElementById('i-id').value;
+            document.getElementById('v-id').innerText = document.getElementById('i-id').value;
+            document.getElementById('v-course').innerText = document.getElementById('i-course').value;
+            document.getElementById('v-adm').innerText = document.getElementById('i-adm').value;
+            document.getElementById('v-birth').innerText = document.getElementById('i-birth').value;
+            document.getElementById('v-issue').innerText = document.getElementById('i-issue').value;
+            document.getElementById('v-expiry').innerText = document.getElementById('i-expiry').value;
+            const p = document.getElementById('i-photo').value;
+            if(p) document.getElementById('v-photo').src = p;
+            document.getElementById('v-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${document.getElementById('i-id').value}`;
+            toggleEditor();
+        }
+    </script>
+</body>
+</html>
